@@ -26,7 +26,7 @@ if __name__ == '__main__':
         for fname in os.listdir(boost_dst):
             if not fname in lst:
                 fpath = os.path.join(boost_dst, fname)
-                print 'rm', fpath
+                print('rm', fpath)
                 o_p.del_any_fpath(fpath)
     
     cmd = '''%(bcp)s --boost=%(boost_src)s boost/smart_ptr.hpp boost/test boost/function.hpp boost/lambda boost/bind \

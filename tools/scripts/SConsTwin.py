@@ -1,8 +1,10 @@
 import SCons
+import re
+import os
 
 def GetDefEnv():
     import SCons.Defaults
-    return SCons.Defaults.DefaultEnvironment()
+    return SCons.Defaults.DefaultEnvironment(tools=['mingw'] if os.name == 'nt' else ['default'])
 
 def IsSConsLE_0_96(env):
     """ Is SCons version <= 0.96 """
@@ -13,13 +15,9 @@ def IsSConsLE_0_96(env):
     return 0
 
 def IsSConsVersionGE(triple):
-    env = GetDefEnv()
-    if '_get_major_minor_revision' in dir(env) and \
-       '__version__' in dir(SCons):
-        scons_ver = env._get_major_minor_revision(SCons.__version__)
-        if scons_ver >= triple:
-            return 1
-    return 0
+    # Modern SCons no longer exposes the private environment version parser.
+    version = tuple(int(n) for n in re.findall(r'\d+', SCons.__version__)[:3])
+    return version + (0,) * (3 - len(version)) >= tuple(triple)
 
 def MakeGenAction(function, strfunction=None):
     if IsSConsVersionGE((1, 2, 0)):

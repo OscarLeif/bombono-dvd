@@ -711,7 +711,7 @@ struct Job
          sigc::connection  watchConn;
         
     Job(int coeff_, int out_idx, io::pos trans_val)
-        : coeff(coeff_), transDone(), outIdx(out_idx), transVal(trans_val), pid(NO_HNDL)
+        : coeff(coeff_), transDone(), outIdx(out_idx), transVal(trans_val), pid(NO_PROCESS)
     { ASSERT( coeff > 0 ); }
 };
 

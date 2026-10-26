@@ -24,19 +24,7 @@
 #include <memory>
 #include <boost/assert.hpp>
 
-#   include <windef.h>
-
-#ifndef WINBASEAPI 
-#define WINBASEAPI 
-#endif
-
-#ifndef TLS_OUT_OF_INDEXES 
-#define TLS_OUT_OF_INDEXES ((DWORD)0xFFFFFFFF)
-#endif
-
-WINBASEAPI DWORD WINAPI TlsAlloc( VOID);
-WINBASEAPI LPVOID WINAPI TlsGetValue(DWORD dwTlsIndex);
-WINBASEAPI BOOL WINAPI TlsSetValue(DWORD dwTlsIndex, LPVOID lpTlsValue);
+#include <windows.h>
 
 
 namespace boost { namespace logging {

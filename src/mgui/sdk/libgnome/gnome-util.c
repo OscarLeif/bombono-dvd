@@ -189,7 +189,9 @@ g_extension_pointer (const char * path)
 int
 gnome_setenv (const char *name, const char *value, gboolean overwrite)
 {
-#if defined (HAVE_SETENV)
+#if defined (G_OS_WIN32)
+    return g_setenv(name, value != NULL ? value : "", overwrite) ? 0 : -1;
+#elif defined (HAVE_SETENV)
 	return setenv (name, value != NULL ? value : "", overwrite);
 #else
 	char *string;
@@ -220,7 +222,9 @@ gnome_setenv (const char *name, const char *value, gboolean overwrite)
 void
 gnome_unsetenv (const char *name)
 {
-#if defined (HAVE_UNSETENV)
+#if defined (G_OS_WIN32)
+    g_unsetenv(name);
+#elif defined (HAVE_UNSETENV)
 	unsetenv (name);
 #else
 	extern char **environ;

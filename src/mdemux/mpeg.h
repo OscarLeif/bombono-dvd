@@ -22,7 +22,11 @@
 #ifndef __MDEMUX_MPEG_H__
 #define __MDEMUX_MPEG_H__
 
+#ifdef _WIN32
+#include <winsock2.h> // htonX()
+#else
 #include <arpa/inet.h> // htonX()
+#endif
 #include <iosfwd>      // std::string
 
 #include <mlib/mlib.h>

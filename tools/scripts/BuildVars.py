@@ -30,11 +30,11 @@ UserOptDict = {}
 
 def PrintBright(is_end):
     if not is_end:
-        print
-        print "****************************************************"
+        print()
+        print("****************************************************")
     else:
-        print "****************************************************"
-        print
+        print("****************************************************")
+        print()
 
 def IsDebugCfg():
     return BuildCfg == 'debug'
@@ -68,10 +68,10 @@ def IsBuildOrRunTests():
 def CheckSettings(main_env):
     global Cc, Cxx, BuildDir, Targets, RunTests, BuildTests
     if RunTests :
-        print 'Tests: on'
+        print('Tests: on')
     else:
         if BuildTests:
-            print 'Tests: on (only building)'
+            print('Tests: on (only building)')
 
     def_env = GetDefEnv()
     # for SCons =<0.96 we need to warn that just 'scons' is not enough:
@@ -92,9 +92,9 @@ def CheckSettings(main_env):
       ( (len(BuildDir) >= 1 and BuildDir[0] == '/') or (len(BuildDir) >= 2 and BuildDir[0:2] == '..') ) and \
       (Targets == [] or Targets == ['.']) :
         PrintBright(0)
-        print 'Warning! "scons" or "scons ." detected while BUILD_DIR is outside "."!'
-        print 'To build successfully with SCons <= v0.96.1 you may need to run something like '
-        print '\t"scons <...> ' + BuildDir + '".' 
+        print('Warning! "scons" or "scons ." detected while BUILD_DIR is outside "."!')
+        print('To build successfully with SCons <= v0.96.1 you may need to run something like ')
+        print('\t"scons <...> ' + BuildDir + '".')
         PrintBright(1)
 
     # we use TestSConscript() function instead of SConscript()
@@ -149,7 +149,7 @@ def CheckSettings(main_env):
     SetBriefOutput(main_env)
 
     # to separate our output from SCons'
-    print
+    print()
 
 # Non/Verbose output
 def SetBriefOutput(env):
@@ -228,7 +228,7 @@ def SetBriefOutput(env):
 
 def ErrorAndExit(msg):
     PrintBright(0)
-    print msg
+    print(msg)
     PrintBright(1)
 
     GetDefEnv().Exit(1)
@@ -255,18 +255,18 @@ def ParseFlagsForCommand(cmd, add_defines = 0):
     if add_defines:
         keys_list.append('CPPDEFINES')
     for key in keys_list:
-        if key in tmp_dict.keys():
+        if key in list(tmp_dict.keys()):
             res_dict[key] = tmp_dict[key]
 
     if Cc != 'como':
         # need to add link flags like "-Wl,--rpath -Wl,<path>"
-        if 'LIBPATH' in res_dict.keys():
+        if 'LIBPATH' in list(res_dict.keys()):
             # we dont want to change dict['LIBPATH'] so we need a copy
             #lib_list = []
             #lib_list[:] = dict['LIBPATH']
             lib_list = list(res_dict['LIBPATH'])
             # but we dont want to "rpath" anything like /usr/X11R6/lib
-            for i in xrange(len(lib_list)-1, -1, -1) :
+            for i in range(len(lib_list)-1, -1, -1) :
                 if lib_list[i].startswith('/usr/') :
                     #print i    
                     lib_list[i:i+1] = []
@@ -383,20 +383,20 @@ def AddComment(cfg_file, var):
         comment = MakeHeaderComment(var['ccomment'], var.get('val') == '1')
 
     if comment:
-        print >> cfg_file, "/* " + comment + " */"
+        print("/* " + comment + " */", file=cfg_file)
 
 def AddDefine(cfg_file, key, **var):
-    print >> cfg_file
+    print(file=cfg_file)
     AddComment(cfg_file, var)
 
     if var['is_on']:
         str = var.get('val', None)
         if str == None:
-            print >> cfg_file, "#define %s" % key
+            print("#define %s" % key, file=cfg_file)
         else:
-            print >> cfg_file, "#define %s %s" % (key, var['val'])
+            print("#define %s %s" % (key, var['val']), file=cfg_file)
     else:
-        print >> cfg_file, "/* #undef %s */" % key
+        print("/* #undef %s */" % key, file=cfg_file)
 
 GenFunctionMap = {}
 
@@ -405,7 +405,7 @@ def MakeConfigFile(target, source, gen_function):
     using 'gen_function' and traditional target/source pair.'''
     def_env = GetDefEnv()
 
-    if 'CfgBuilder' not in def_env['BUILDERS'].keys():
+    if 'CfgBuilder' not in list(def_env['BUILDERS'].keys()):
         # first time, create cfg builder
         def GenerateConfigFile(target, source, env):
             global GenFunctionMap
@@ -418,7 +418,7 @@ def MakeConfigFile(target, source, gen_function):
 
     global GenFunctionMap
     key = def_env.File(target).abspath
-    assert not(key in GenFunctionMap.keys())
+    assert not(key in list(GenFunctionMap.keys()))
     GenFunctionMap[key] = gen_function
 
     def_env.CfgBuilder(target, source)
@@ -450,14 +450,14 @@ def MakeIncludeOptions(dir_list, to_convert=0):
     dst = []
     if to_convert:
         def_env = GetDefEnv()
-        for i in xrange(len(dir_list)):
+        for i in range(len(dir_list)):
             dir_list[i] = def_env.Dir(dir_list[i]).path
     for path in dir_list:
         dst.append('-I' + path)
     return dst
 
 def MoveIncludeOptions(dict):
-    if 'CPPPATH' in dict.keys():
+    if 'CPPPATH' in list(dict.keys()):
         dict['POST_CPPINCFLAGS'] = MakeIncludeOptions(dict['CPPPATH'])
         del dict['CPPPATH']
 
@@ -495,7 +495,7 @@ def IsToBuildQuick():
             res = True
         elif not IsReenter(IsToBuildQuick):
             # warn once only
-            print 'BUILD_QUICK=true is not supported for current compiler(%s)!' % Cc
+            print('BUILD_QUICK=true is not supported for current compiler(%s)!' % Cc)
 
     return res
 
@@ -503,8 +503,8 @@ def ExtendEnvVariable(env, name, add_name):
     env[name] = '%s $%s' % (env[name], add_name)
 
 def CreateEnvVersion2(**kw):
-    tools = ['default', 'AuxTools']
-    if kw.has_key('tools'):
+    tools = ['mingw' if os.name == 'nt' else 'default', 'AuxTools']
+    if 'tools' in kw:
         tools += kw['tools']
     kw['tools'] = tools
 

@@ -97,6 +97,7 @@ def CheckAltivec(context, is_altivec):
     return ret
 
 align_text = """
+#include <stddef.h>
 int main ()
 {
     static struct s 
@@ -107,10 +108,10 @@ int main ()
     switch (1) 
     {
     case 0:
-    case (int)(&((struct s *)0)->b) == %s:
+    case offsetof(struct s, b) == %s:
         return 0;
     }
-    return (long)&S;
+    return 0;
 }
 """
 
@@ -165,10 +166,11 @@ sigtype_text = """
 # undef signal
 #endif
 
-void (*signal ()) ();
+static void handler(int sig) { (void)sig; }
 int main ()
 {
-    int i;
+    void (*previous)(int) = signal(SIGINT, handler);
+    (void)previous;
     return 0;
 }
 """
@@ -218,7 +220,7 @@ def CheckRestrictWord(context):
     return word
 
 def AddCfgVariable(key, **cfg_var):
-    assert not(key in ConfigDict.keys())
+    assert not(key in list(ConfigDict.keys()))
     ConfigDict[key] = cfg_var
 
 def AddCfgName(name, is_on, **opt):
@@ -241,7 +243,7 @@ def CfgCheckCHeader(conf, header_name):
 
 ############################################
 
-env = Environment(ENV = os.environ)
+env = Environment(ENV = os.environ, tools = ['mingw'] if os.name == 'nt' else ['default'])
 
 conf_dir = user_options_dict['ConfigDir']
 log_file = conf_dir + "/config.log"
@@ -310,7 +312,7 @@ def SetArch(name, is_on):
     cfg_var = { 'is_on' : is_on, 'val' : None, 'comment' : str }
     AddCfgVariable(name, **cfg_var)
 
-for name in arch_dict.keys():
+for name in list(arch_dict.keys()):
     SetArch(name, arch_dict[name])
 AddCfgName('altivec.h', set_altivec, ccomment = 'altivec.h')
 

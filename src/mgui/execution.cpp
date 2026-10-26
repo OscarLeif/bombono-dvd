@@ -37,18 +37,26 @@
 #include <boost/lexical_cast.hpp>
 #include <signal.h> // SIGTERM
 #include <errno.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/wait.h> // WIFEXITED
+#endif
 
 namespace Execution
 {
 
 void Stop(GPid& pid)
 {
-    ASSERT( pid != NO_HNDL );
+    ASSERT( pid != NO_PROCESS );
+#ifdef _WIN32
+    ASSERT_RTL( TerminateProcess(pid, 1) );
+#else
     kill(pid, SIGTERM);
+#endif
 }
 
-Data::Data(): pid(NO_HNDL), userAbort(false) {}
+Data::Data(): pid(NO_PROCESS), userAbort(false) {}
 
 void Data::StopExecution(const std::string& what)
 {
@@ -140,7 +148,11 @@ ExecOutput::~ExecOutput()
         outConn.disconnect();
 
         // хочется точно знать, что дескриптор закрыли
+#ifdef _WIN32
+        int fd = g_io_channel_win32_get_fd(outChnl->gobj());
+#else
         int fd = g_io_channel_unix_get_fd(outChnl->gobj());
+#endif
         outChnl.reset();
 
         ASSERT( !IsFDOpen(fd) );
@@ -149,11 +161,13 @@ ExecOutput::~ExecOutput()
 
 void ExecOutput::Watch(int fd, const Functor& fnr, Glib::IOCondition cond)
 {
-    outConn = Glib::signal_io().connect(wrap_return<bool>(fnr), fd, cond);
-
     outChnl = Glib::IOChannel::create_from_fd(fd);
     outChnl->set_close_on_unref(true);
+#ifndef _WIN32
     outChnl->set_flags(Glib::IO_FLAG_NONBLOCK);
+#endif
+    // Windows channels own a reader thread; the watch must use that same channel.
+    outConn = Glib::signal_io().connect(wrap_return<bool>(fnr), outChnl, cond);
 }
 
 static ExecOutput& GetEO(ProgramOutput& po, bool is_out)
@@ -222,6 +236,9 @@ static void SetupEO(ProgramOutput& po, int fd, bool is_out)
 ExitData StatusToExitData(int status)
 {
     ExitData ed;
+#ifdef _WIN32
+    ed.code = status;
+#else
     if( WIFEXITED(status) )
         ed.code = WEXITSTATUS(status);
     else if( WIFSIGNALED(status) )
@@ -231,6 +248,7 @@ ExitData StatusToExitData(int status)
     }
     else
         ASSERT_RTL(0);
+#endif
 
     return ed;
 }
@@ -374,9 +392,15 @@ static ExitData GUIWaitForExit(GPid pid)
 
 static ExitData ConsoleWaitForExit(GPid pid)
 {
+#ifdef _WIN32
+    ASSERT_RTL( WaitForSingleObject(pid, INFINITE) == WAIT_OBJECT_0 );
+    DWORD status;
+    ASSERT_RTL( GetExitCodeProcess(pid, &status) );
+#else
     int status;
     while( waitpid(pid, &status, 0) == -1 ) 
         ASSERT_RTL( errno == EINTR );
+#endif
 
     return CloseProcData(pid, status);
 }
@@ -397,7 +421,7 @@ ExitData ExecuteAsync(const char* dir, const char* cmd, const ReadReadyFnr& fnr,
         GPid p = Spawn(dir, cmd, out_err, true);
         if( pid )
         {
-            ASSERT( *pid == NO_HNDL );
+            ASSERT( *pid == NO_PROCESS );
             *pid = p;
         }
 
@@ -406,7 +430,7 @@ ExitData ExecuteAsync(const char* dir, const char* cmd, const ReadReadyFnr& fnr,
         ed = GUIWaitForExit(p);
 
         if( pid )
-            *pid = NO_HNDL;
+            *pid = NO_PROCESS;
     }
 
     LogEA("End");
@@ -432,12 +456,16 @@ GPid Spawn(const char* dir, const char *commandline, int out_err[2], bool need_w
     //if( !g_shell_parse_argv(commandline, NULL, &argv, &error) )
     //  ThrowGError(std::string("while parsing command_line: ") + commandline, error);
 
-    g_return_val_if_fail(commandline != NULL, -1);
+    g_return_val_if_fail(commandline != NULL, NO_PROCESS);
 
     char* user_shell = gnome_util_user_shell();
     char * argv[4];
     argv[0] = user_shell;
+#ifdef _WIN32
+    argv[1] = (char *)"/c";
+#else
     argv[1] = (char *)"-c";
+#endif
     /* necessary cast, to avoid warning, but safe */
     argv[2] = (char *)commandline;
     argv[3] = NULL;
@@ -452,12 +480,15 @@ GPid Spawn(const char* dir, const char *commandline, int out_err[2], bool need_w
     bool res = g_spawn_async_with_pipes(dir, argv, 0, flags, 0, 0, &pid, 
                                         in_fd, out_err, out_err ? out_err+1 : 0, &error);
     //g_strfreev (argv);
-    g_free (user_shell);
-
     if( !res )
-        ThrowGError(std::string("while spawning: ") + argv[0], error);
+    {
+        std::string description = std::string("while spawning: ") + user_shell;
+        g_free(user_shell);
+        ThrowGError(description, error);
+    }
+    g_free(user_shell);
     // считаем, что проверка выше включает действительность pid
-    ASSERT_RTL( pid > 0 );
+    ASSERT_RTL( pid != NO_PROCESS );
 
     return pid;
 }

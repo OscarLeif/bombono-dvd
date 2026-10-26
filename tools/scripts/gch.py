@@ -78,10 +78,10 @@ GchBuilder = SCons.Builder.Builder(action = GchAction,
 
 
 def SetPCHDependencies(target, source, env, gch_key):
-    if env.has_key(gch_key) and env[gch_key]:
+    if gch_key in env and env[gch_key]:
         gch_node = env[gch_key]
         # Murav'jov - alternative variant
-        if env.has_key('DepGch') and env['DepGch']:
+        if 'DepGch' in env and env['DepGch']:
             env.Depends(target, gch_node)
         else:
             scanner = GetCScannerFunc()

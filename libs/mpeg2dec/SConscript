@@ -69,9 +69,9 @@ def AddMpeg2DecDesc(cfg_file):
 
 def GenerateMpeg2DecCfg(target, source, env):
     cfg_file = open(target[0].path, 'w')
-    print >> cfg_file, "/* Auto-generated header */"
-    print >> cfg_file
-    print >> cfg_file, '#include <cfg/config.h>'
+    print("/* Auto-generated header */", file=cfg_file)
+    print(file=cfg_file)
+    print('#include <cfg/config.h>', file=cfg_file)
 
     BuildVars.AddDefine(cfg_file, 'ACCEL_DETECT', is_on = 1, comment = "autodetect accelerations")
     BuildVars.AddDefine(cfg_file, 'LIBVO_DX',     is_on = 0, comment = "libvo DirectX support")

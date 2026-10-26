@@ -47,6 +47,7 @@
 
 #include <gtk/gtkaboutdialog.h>
 #include <gtk/gtklinkbutton.h> // gtk_button_set_relief
+#include <gio/gio.h>
 
 //
 // COPY_N_PASTE_ETALON из go-file.c, проект Gnumeric, http://projects.gnome.org/gnumeric/
@@ -75,12 +76,10 @@ check_program (char const *prog)
 static void
 go_url_show(GtkAboutDialog*, const gchar* url, gpointer)
 {
-#ifdef G_OS_WIN32
-    ShellExecute (NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
-
-    return; //NULL;
-#else
     GError *err = NULL;
+#ifdef G_OS_WIN32
+    g_app_info_launch_default_for_uri(url, NULL, &err);
+#else
 #ifdef GOFFICE_WITH_GNOME
     gnome_url_show (url, &err);
 #else

@@ -26,6 +26,9 @@
 #include <boost/logging/format/destination/convert_destination.hpp>
 #include <boost/logging/format/destination/file.hpp>
 #include <iostream>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 namespace boost { namespace logging { namespace destination {
 

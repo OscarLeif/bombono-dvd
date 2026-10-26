@@ -60,8 +60,8 @@ struct MotionData
 
 // используем "родной" прозрачный цвет в png
 //const uint BLACK2_CLR = 0x010101ff; // заменяется на прозрачный spumux'ом
-const uint HIGH_CLR   = 0xfff00080;   // прозрачность = 50%
-const uint SELECT_CLR = 0xff006c80;
+const unsigned int HIGH_CLR   = 0xfff00080;   // прозрачность = 50%
+const unsigned int SELECT_CLR = 0xff006c80;
 
 struct SubpicturePalette
 {

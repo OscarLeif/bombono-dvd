@@ -46,11 +46,6 @@ C_LINKAGE_END
 // 
 // Поэтому: пользователи Linux остаются без предпросмотра содержимого DVD,
 // пользователи же Windows не страдают из-за подобного политгемора
-#if defined(AVFORMAT_54) && defined(_WIN32)
-C_LINKAGE_BEGIN
-#include <libavformat/url.h> // ffurl_register_protocol()
-C_LINKAGE_END
-#endif
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,05,00)
 C_LINKAGE_BEGIN
@@ -296,6 +291,7 @@ void CloseInfo(FFData& ffi)
 #endif
         ffi.iCtx = 0;
     }
+    ffi.customIO.reset();
 }
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,32,00)
@@ -448,6 +444,19 @@ bool OpenInfo(FFData& ffi, const char* fname, FFDiagnosis& diag)
     AVInputFormat* file_iformat = 0;
 
     AVFormatContext* ic = 0;
+#ifdef AVFORMAT_54
+    if( ffi.customIO )
+    {
+        ic = avformat_alloc_context();
+        if( !ic )
+        {
+            err_str = "Cannot allocate video input context";
+            return false;
+        }
+        ic->pb = static_cast<AVIOContext*>(ffi.customIO.get());
+        ic->flags |= AVFMT_FLAG_CUSTOM_IO;
+    }
+#endif
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53,2,0)
     int av_res = avformat_open_input(&ic, fname, file_iformat, 0);
 #else
@@ -648,10 +657,11 @@ static int bmd_avpicture_fill(AVFrame *picture, const uint8_t *ptr,
 #endif
 }
 
-bool FFViewer::Open(const char* fname, std::string& err_str)
+bool FFViewer::Open(const char* fname, std::string& err_str, boost::shared_ptr<void> input)
 {
     // * закрываем открытое ранее
     Close();
+    customIO = input;
 
     bool res = OpenInfo(*this, fname, err_str);
     if( res )
@@ -1261,7 +1271,7 @@ RefPtr<Gdk::Pixbuf> GetRawFrame(double time, FFViewer& ffv)
 
 namespace DVD {
 
-#if !defined(AVFORMAT_54) || defined(_WIN32)
+#if !defined(AVFORMAT_54)
 
 struct VobCtx
 {
@@ -1407,10 +1417,80 @@ bool OpenVob(FFViewer& ffv, VobPtr vob, dvd_reader_t* dvd, std::string& err_str)
     
 #else    
     
-bool OpenVob(FFViewer&, VobPtr, dvd_reader_t*, std::string& err_str)
+struct VobInput
 {
-    err_str = "Libav: no soup for Linux users^W^W^W^W^W see https://bugzilla.libav.org/show_bug.cgi?id=224";
-    return false;
+    VobFile file;
+    int64_t position;
+    VobInput(VobPtr vob, dvd_reader_t* dvd): file(vob, dvd), position(0) {}
+};
+
+static int ReadVobInput(void* opaque, unsigned char* buffer, int size)
+{
+    VobInput& input = *static_cast<VobInput*>(opaque);
+    int count = int(std::min(int64_t(size), int64_t(Size(input.file)) - input.position));
+    if( count <= 0 )
+        return AVERROR_EOF;
+    try
+    {
+        ReadVob(reinterpret_cast<char*>(buffer), count, input.file, input.position);
+        input.position += count;
+        return count;
+    }
+    catch( const std::exception& )
+    {
+        return AVERROR(EIO);
+    }
+}
+
+static int64_t SeekVobInput(void* opaque, int64_t offset, int whence)
+{
+    VobInput& input = *static_cast<VobInput*>(opaque);
+    const int64_t size = Size(input.file);
+    if( whence == AVSEEK_SIZE )
+        return size;
+    whence &= ~AVSEEK_FORCE;
+    int64_t base;
+    switch( whence )
+    {
+    case SEEK_SET: base = 0; break;
+    case SEEK_CUR: base = input.position; break;
+    case SEEK_END: base = size; break;
+    default: return AVERROR(EINVAL);
+    }
+    if( offset < -base || offset > size - base )
+        return AVERROR(EINVAL);
+    input.position = base + offset;
+    return input.position;
+}
+
+static void CloseVobInput(void* opaque)
+{
+    AVIOContext* io = static_cast<AVIOContext*>(opaque);
+    delete static_cast<VobInput*>(io->opaque);
+    av_free(io->buffer);
+    av_free(io);
+}
+
+bool OpenVob(FFViewer& ffv, VobPtr vob, dvd_reader_t* dvd, std::string& err_str)
+{
+    const int buffer_size = 32768;
+    unsigned char* buffer = static_cast<unsigned char*>(av_malloc(buffer_size));
+    if( !buffer )
+    {
+        err_str = "Cannot allocate DVD input buffer";
+        return false;
+    }
+    VobInput* input = new VobInput(vob, dvd);
+    AVIOContext* io = avio_alloc_context(buffer, buffer_size, 0, input,
+                                        ReadVobInput, 0, SeekVobInput);
+    if( !io )
+    {
+        delete input;
+        av_free(buffer);
+        err_str = "Cannot allocate DVD input context";
+        return false;
+    }
+    return ffv.Open("dvd.vob", err_str, boost::shared_ptr<void>(io, CloseVobInput));
 }
     
 #endif

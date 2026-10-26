@@ -145,7 +145,7 @@ static void NotifyToRestart()
 int MaxCPUWorkload()
 {
 #ifdef _WIN32
-#error "TODO"
+    return std::max(1, int(g_get_num_processors()));
 #else
     // кол-во работающих процессоров, а не всего, _SC_NPROCESSORS_CONF 
     // (система может использовать не все)

@@ -115,6 +115,9 @@ viewer_bin = MGuiProgram(bin_path + '/mviewer', ['timeline/mviewer-main.cpp'])
 # Bombono DVD
 #
 bombono_bin = MGuiProgram(target = bin_path + '/bombono-dvd', source = ['project/mconstructor-main.cpp'])
+if 'windows-smoke' in COMMAND_LINE_TARGETS:
+    smoke_bin = MGuiProgram(bin_path + '/windows-smoke', ['tests/windows-smoke.cpp'])
+    Alias('windows-smoke', smoke_bin)
 bin_mgui_env.Install(user_options_dict['BIN_PREFIX'], bombono_bin) # + viewer_bin)
 
 # .desktop ...

@@ -27,6 +27,9 @@
 #include <mlib/const.h>    // NO_HNDL
 #include <mlib/function.h>
 
+// GPid is a HANDLE on Windows and an integer on Unix. Zero is invalid on both.
+const GPid NO_PROCESS = 0;
+
 namespace Execution {
 
 struct Data 
@@ -39,7 +42,7 @@ ActionFunctor  stopFnr;   // альтернатива pid
 
             // в процессе выполнения внешней команды
             // установивший pid в конце должен его обнулить снова
-      bool  IsAsyncCall() { return pid != NO_HNDL; }
+      bool  IsAsyncCall() { return pid != NO_PROCESS; }
 
       void  Init();
       void  StopExecution(const std::string& what);

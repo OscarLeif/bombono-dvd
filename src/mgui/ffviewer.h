@@ -35,6 +35,7 @@ C_LINKAGE_BEGIN
 C_LINKAGE_END
 
 #include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
 
 // :TRICKY: для сборок со старыми версиями ffmpeg ~ 0.5
 #if (LIBAVCODEC_VERSION_MAJOR < 53) && !defined(AVMEDIA_TYPE_AUDIO)
@@ -70,6 +71,7 @@ RefPtr<Gdk::Pixbuf> GetRawFrame(double time, FFViewer& ffv);
 struct FFData: public boost::noncopyable
 {
     AVFormatContext* iCtx;
+    boost::shared_ptr<void> customIO;
                 int  videoIdx;
               Point  vidSz; // первоначальный размер
 
@@ -100,7 +102,8 @@ struct FFViewer: public FFData
                     FFViewer();
                    ~FFViewer();
 
-              bool  Open(const char* fname, std::string& err);
+              bool  Open(const char* fname, std::string& err,
+                         boost::shared_ptr<void> input = boost::shared_ptr<void>());
               bool  Open(const char* fname);
               void  Close();
 };

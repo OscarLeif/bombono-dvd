@@ -54,6 +54,7 @@ class stream
         stream& operator >> (short& val);
         stream& operator >> (int& val);
         stream& operator >> (long& val);
+        stream& operator >> (long long& val);
         stream& operator >> (float& val);
         stream& operator >> (double& val);
 
@@ -64,6 +65,7 @@ class stream
         stream& operator << (short val);
         stream& operator << (int val);
         stream& operator << (long val);
+        stream& operator << (long long val);
         stream& operator << (float val);
         stream& operator << (double val);
  
@@ -96,6 +98,7 @@ UNSIGNED_STRM_OP(int)
 UNSIGNED_STRM_OP(char)
 UNSIGNED_STRM_OP(short)
 UNSIGNED_STRM_OP(long)
+UNSIGNED_STRM_OP(long long)
 
 #undef UNSIGNED_STRM_OP
 

@@ -74,7 +74,7 @@ struct FFmpegCloser
             ExitData& ed;
 ptr::one<OutErrBlock> oeb;
 
-     FFmpegCloser(ExitData& ed_): pid(NO_HNDL), inFd(NO_HNDL), ed(ed_) {}
+     FFmpegCloser(ExitData& ed_): pid(NO_PROCESS), inFd(NO_HNDL), ed(ed_) {}
     ~FFmpegCloser();
 };
 

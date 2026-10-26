@@ -36,8 +36,8 @@ user_options_dict['SetPCH'](bin_mgui_tests_env, '_pc_.h')
 bin_mgui_tests_env.Program(target=test_prg_name, source = source_files+lib_mgui_objs)
 
 import os
-if os.environ.has_key('DISPLAY'):
+if 'DISPLAY' in os.environ:
     UnitTest(test_prg_name, bin_mgui_tests_env)
 else:
-    print "Warning: X Display is not found. GUI tests are disabled."
+    print("Warning: X Display is not found. GUI tests are disabled.")
 

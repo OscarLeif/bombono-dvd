@@ -1123,7 +1123,7 @@ RefPtr<MediaStore> CreateMediaStore()
 io::pos PhisSize(const char* fname)
 {
     io::pos res = 0;
-    struct stat buf;
+    GStatBuf buf;
     if( g_stat(fname, &buf) == 0 )
         res = buf.st_size;
     return res;

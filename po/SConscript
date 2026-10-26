@@ -16,7 +16,7 @@ def mo_builder(target,source,env):
              target[0].get_path(),
              source[0].get_path()
            ]
-    return os.spawnvp(os.P_WAIT, 'msgfmt', args)
+    return subprocess.call(args, env=env['ENV'])
 
 mo_bld = Builder(action = mo_builder)
 env.Append(BUILDERS = {'MoBuild' : mo_bld})
@@ -35,13 +35,14 @@ def po_builder(target,source,env):
              str(source[0]),
              str(source[1]),
            ]
-    print 'Updating ' + trgt
-    return os.spawnvp(os.P_WAIT, 'msgmerge', args)
+    print('Updating ' + trgt)
+    return subprocess.call(args, env=env['ENV'])
 
 po_bld = Builder (action = po_builder)
 env.Append(BUILDERS = {'PoBuild' : po_bld})
 
 import os, glob
+import subprocess
 cwd = str(Dir('.').srcnode())
 PackageName = 'bombono-dvd'
 
@@ -88,7 +89,7 @@ def pot_builder(target,source,env):
              '''--copyright-holder="Ilya Murav'jov"''' ]
     args += [ src.get_path() for src in source ]
     
-    return os.spawnvp(os.P_WAIT, 'xgettext', args)
+    return subprocess.call(args, env=env['ENV'])
 
 pot_bld = Builder(action = pot_builder)
 env.Append(BUILDERS = {'PotBuild' : pot_bld})

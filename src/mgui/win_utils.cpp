@@ -30,7 +30,6 @@
 #include <mgui/prefs.h> // fcMap
 #include <mgui/gettext.h>
 #include <mgui/timeline/mviewer.h> // FileFilterList
-#include <mgui/sdk/win32filesel.h> // CallWinFileDialog
 
 #include <mbase/project/table.h> // Project::ConvertPathToUtf8()
 #include <mbase/resources.h>
@@ -324,13 +323,6 @@ bool RunFileDialog(const char* title, bool open_file, Str::List& chosen_paths,
                    bool multiple_choice, const FCDFunctor& fnr)
 {
     bool res;
-#ifdef _WIN32
-    if( !fnr )
-        // используем нативный диалог, по возможности
-        // :TODO: соответственно, кастомизировать диалоги пока невозможно
-        res = CallWinFileDialog(title, open_file, chosen_paths, &for_wdg, pat_lst, multiple_choice);
-    else
-#endif
     {
         Gtk::FileChooserDialog dialog(title, open_file ? Gtk::FILE_CHOOSER_ACTION_OPEN : Gtk::FILE_CHOOSER_ACTION_SAVE);
         
@@ -449,7 +441,8 @@ static void PresentGtkmmedException(const std::string& reason)
     // - под Linux есть Zenity для простых диалогов
     // - для Win можно создать отдельный поток с ожиданием и WinMsgBox(), как для OnMinidumpCallback()
 #ifdef _WIN32
-    WinMsgBox(text, title);
+    MessageBoxW(NULL, Utf8ToUcs16(text.c_str()).c_str(),
+                Utf8ToUcs16(title).c_str(), MB_OK | MB_ICONERROR);
 #else
     ErrorBox(title, text);
 #endif
